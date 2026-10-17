@@ -27,11 +27,16 @@
   #card .name{font-weight:600;font-size:14px}
   #card .hint{color:var(--muted);font-size:11px}
   #card button{float:right;border:0;background:none;font-size:18px;line-height:1}
+  /* eigener Container mit Stapelkontext: Kamera-Video (z-index -2) liegt sicher sichtbar hinter der 3D-Ebene */
+  #ar{position:fixed;inset:0;z-index:0;overflow:hidden}
+  #ar video{display:block!important;visibility:visible!important;opacity:1!important}
+  #ver{font-size:11px;color:var(--muted);margin-left:auto}
   #loading{position:fixed;inset:0;background:#000;display:flex;align-items:center;justify-content:center;z-index:15;color:#fff;font-size:15px;text-align:center;padding:20px}
 </style>
 </head>
 <body>
 <div id="bar"></div>
+<div id="ar"></div>
 <div id="loading">Lade Ziele …</div>
 <div id="card"><button onclick="hideCard()">×</button><div class="name"></div><div class="code"></div><div class="hint">Dummy-3D – echtes Modell folgt (models/&lt;Artikelnr&gt;.glb)</div></div>
 <div id="metrics"></div>
@@ -70,7 +75,8 @@ bar.innerHTML = `<b>Minilog AR</b>
   <a class="${mode==='spread'?'on':''}" href="${link('spread','&s='+s)}">Doppelseite</a>
   <a class="${mode==='chapter'?'on':''}" href="${link('chapter')}">Kapitel</a>
   <a class="${mode==='all'?'on':''}" href="${link('all')}">Alle 68</a>
-  ${mode==='spread'?`<select onchange="location.search='${link('spread')}&s='+this.value">${spreadOpts}</select>`:''}`;
+  ${mode==='spread'?`<select onchange="location.search='${link('spread')}&s='+this.value">${spreadOpts}</select>`:''}
+  <span id="ver">v3</span>`;
 
 /* ---------- Messwerte ---------- */
 const t0 = performance.now();
@@ -188,7 +194,9 @@ async function mergedTargets(list){
   });
   scene.addEventListener('arReady', () => { M.arReady = performance.now()-t0; document.getElementById('loading').style.display='none'; renderMetrics(); });
   scene.addEventListener('arError', () => { document.getElementById('loading').textContent = 'Kamera nicht verfügbar (HTTPS + Kamerafreigabe nötig).'; });
-  document.body.appendChild(scene);
+  scene.setAttribute('embedded', '');
+  scene.style.cssText = 'position:absolute;inset:0;width:100%;height:100%';
+  document.getElementById('ar').appendChild(scene);
 })();
 </script>
 </body>
