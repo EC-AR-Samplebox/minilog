@@ -9,7 +9,8 @@
 <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
 <style>
   :root{--red:#e30613;--ink:#1d1d1b;--bg:rgba(255,255,255,.94);--muted:#6b6b6b}
-  html,body{margin:0;height:100%;overflow:hidden;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;background:#000;color:var(--ink)}
+  /* kein Hintergrund auf body: MindAR legt das Kamerabild mit negativem z-index dahinter */
+  html,body{margin:0;height:100%;overflow:hidden;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;background:transparent;color:var(--ink)}
   #bar{position:fixed;top:0;left:0;right:0;z-index:20;display:flex;gap:6px;align-items:center;flex-wrap:wrap;
        padding:calc(env(safe-area-inset-top) + 8px) 10px 8px;background:var(--bg);font-size:13px}
   #bar b{color:var(--red)}
@@ -26,7 +27,7 @@
   #card .name{font-weight:600;font-size:14px}
   #card .hint{color:var(--muted);font-size:11px}
   #card button{float:right;border:0;background:none;font-size:18px;line-height:1}
-  #loading{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;z-index:15;color:#fff;font-size:15px;text-align:center;padding:20px}
+  #loading{position:fixed;inset:0;background:#000;display:flex;align-items:center;justify-content:center;z-index:15;color:#fff;font-size:15px;text-align:center;padding:20px}
 </style>
 </head>
 <body>
@@ -151,7 +152,7 @@ async function mergedTargets(list){
   try { src = await mergedTargets(pages); }
   catch(e){ document.getElementById('loading').textContent = 'Fehler beim Laden: '+e.message; return; }
   M.download = performance.now()-t0; renderMetrics();
-  document.getElementById('loading').textContent = 'Starte Kamera …';
+  document.getElementById('loading').style.display = 'none';   // Kamera-Dialog nicht verdecken
 
   const scene = document.createElement('a-scene');
   scene.setAttribute('mindar-image', {imageTargetSrc: src, maxTrack: 1, uiScanning: 'no', uiLoading: 'no', filterMinCF: 0.0001, filterBeta: 0.001});
