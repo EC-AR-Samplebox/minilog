@@ -1,0 +1,194 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Minilog AR – Test</title>
+<script src="https://cdn.jsdelivr.net/npm/@msgpack/msgpack@2.8.0/dist.es5+umd/msgpack.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/aframe@1.5.0/dist/aframe-master.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
+<style>
+  :root{--red:#e30613;--ink:#1d1d1b;--bg:rgba(255,255,255,.94);--muted:#6b6b6b}
+  html,body{margin:0;height:100%;overflow:hidden;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;background:#000;color:var(--ink)}
+  #bar{position:fixed;top:0;left:0;right:0;z-index:20;display:flex;gap:6px;align-items:center;flex-wrap:wrap;
+       padding:calc(env(safe-area-inset-top) + 8px) 10px 8px;background:var(--bg);font-size:13px}
+  #bar b{color:var(--red)}
+  #bar a,#bar select{font:inherit;padding:5px 9px;border-radius:14px;border:1px solid #ccc;background:#fff;color:var(--ink);text-decoration:none}
+  #bar a.on{background:var(--red);border-color:var(--red);color:#fff}
+  #metrics{position:fixed;left:8px;bottom:calc(env(safe-area-inset-bottom) + 8px);z-index:20;background:var(--bg);
+       border-radius:10px;padding:8px 10px;font:12px/1.45 ui-monospace,Menlo,monospace;max-width:calc(100% - 16px);box-sizing:border-box}
+  #metrics .big{font:600 15px system-ui;color:var(--red)}
+  #metrics button{font:inherit;margin-top:4px;padding:3px 8px;border-radius:8px;border:1px solid #ccc;background:#fff}
+  .a-enter-vr,.a-enter-ar,.a-enter-vr-button,.a-enter-ar-button{display:none!important}
+  #card{position:fixed;right:8px;top:calc(env(safe-area-inset-top) + 56px);z-index:21;background:#fff;border-radius:12px;
+       padding:10px 12px;max-width:230px;box-shadow:0 4px 18px rgba(0,0,0,.3);display:none}
+  #card .code{display:inline-block;background:#e9e9e9;padding:1px 6px;border-radius:3px;font-size:12px;margin:4px 0}
+  #card .name{font-weight:600;font-size:14px}
+  #card .hint{color:var(--muted);font-size:11px}
+  #card button{float:right;border:0;background:none;font-size:18px;line-height:1}
+  #loading{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;z-index:15;color:#fff;font-size:15px;text-align:center;padding:20px}
+</style>
+</head>
+<body>
+<div id="bar"></div>
+<div id="loading">Lade Ziele …</div>
+<div id="card"><button onclick="hideCard()">×</button><div class="name"></div><div class="code"></div><div class="hint">Dummy-3D – echtes Modell folgt (models/&lt;Artikelnr&gt;.glb)</div></div>
+<div id="metrics"></div>
+<script>
+/* ---------- Konfiguration ---------- */
+const CHAPTERS = {
+  protection: {label:'Protection', from:5, to:22},
+  // electronics:{label:'Electronics',from:23,to:32}, access:{...}, machine:{...}, fasteners:{...}
+};
+const ALL_PAGES = Array.from({length:68},(_,i)=>i+1);
+const ASPECT = 905/640;           // Höhe/Breite der Zielbilder
+const COLORS = ['#e30613','#f5c400','#1e5bc6','#222','#2e9c4a','#ff7a00'];
+
+const q = new URLSearchParams(location.search);
+const mode = ['spread','chapter','all'].includes(q.get('mode')) ? q.get('mode') : 'chapter';
+const chapKey = CHAPTERS[q.get('c')] ? q.get('c') : 'protection';
+const chap = CHAPTERS[chapKey];
+const s = parseInt(q.get('s') || chap.from, 10);
+const pad = n => String(n).padStart(2,'0');
+
+/* Doppelseite: links gerade, rechts ungerade (4|5, 6|7 …) */
+function spreadOf(p){ const l = p % 2 === 0 ? p : p-1; return [l, l+1].filter(x => x>=1 && x<=68); }
+let pages;
+if (mode==='spread') pages = spreadOf(s);
+else if (mode==='chapter') pages = Array.from({length:chap.to-chap.from+1},(_,i)=>chap.from+i);
+else pages = ALL_PAGES;
+
+/* ---------- UI: Modus-Leiste ---------- */
+const bar = document.getElementById('bar');
+const link = (m, extra='') => `?mode=${m}&c=${chapKey}${extra}`;
+let spreadOpts = '';
+for (let p = chap.from - (chap.from%2); p <= chap.to; p += 2) {
+  const sp = spreadOf(p); spreadOpts += `<option value="${sp[0]}" ${sp.includes(s)?'selected':''}>S. ${sp.join('|')}</option>`;
+}
+bar.innerHTML = `<b>Minilog AR</b>
+  <a class="${mode==='spread'?'on':''}" href="${link('spread','&s='+s)}">Doppelseite</a>
+  <a class="${mode==='chapter'?'on':''}" href="${link('chapter')}">Kapitel</a>
+  <a class="${mode==='all'?'on':''}" href="${link('all')}">Alle 68</a>
+  ${mode==='spread'?`<select onchange="location.search='${link('spread')}&s='+this.value">${spreadOpts}</select>`:''}`;
+
+/* ---------- Messwerte ---------- */
+const t0 = performance.now();
+const M = {mode, targets: pages.length, bytes:0, download:null, arReady:null, firstFound:null, found:[]};
+const ms = v => v==null ? '–' : (v/1000).toFixed(1)+' s';
+function renderMetrics(){
+  const last = M.found[M.found.length-1];
+  document.getElementById('metrics').innerHTML =
+    `<div class="big">${last ? 'Erkannt: Seite '+last.page : 'Suche Seite …'}</div>
+     Modus: ${mode} · ${M.targets} Ziele · ${(M.bytes/1048576).toFixed(1)} MB<br>
+     Download+Merge: ${ms(M.download)} · Kamera bereit: ${ms(M.arReady)}<br>
+     1. Erkennung: ${ms(M.firstFound)} · Erkennungen: ${M.found.length}
+     ${M.found.length? '<br>Verlauf: '+M.found.slice(-8).map(f=>f.page).join(' → '):''}
+     <br><button onclick="copyMetrics()">Messwerte kopieren</button>`;
+}
+function copyMetrics(){
+  const txt = `Minilog AR Test | ${navigator.userAgent}\nModus ${mode}, ${M.targets} Ziele, ${(M.bytes/1048576).toFixed(1)} MB\n`+
+    `Download ${ms(M.download)}, Kamera bereit ${ms(M.arReady)}, 1. Erkennung ${ms(M.firstFound)}\n`+
+    `Erkannte Seiten: ${M.found.map(f=>f.page+'@'+(f.t/1000).toFixed(1)+'s').join(', ')}`;
+  navigator.clipboard?.writeText(txt).then(()=>alertLite('Kopiert'),()=>prompt('Messwerte:',txt));
+}
+function alertLite(t){ const el=document.querySelector('#metrics .big'); const o=el.textContent; el.textContent=t; setTimeout(()=>el.textContent=o,1200); }
+renderMetrics();
+
+/* ---------- Produktkarte ---------- */
+function showCard(h){ const c=document.getElementById('card'); c.querySelector('.name').textContent=h.name||'Produkt'; c.querySelector('.code').textContent=h.code; c.style.display='block'; }
+function hideCard(){ document.getElementById('card').style.display='none'; document.querySelectorAll('.model').forEach(m=>m.remove()); }
+
+/* ---------- Dummy-3D (oder models/<code>.glb, falls vorhanden) ---------- */
+const glbCache = {};
+async function hasGlb(code){
+  if (code in glbCache) return glbCache[code];
+  try { const r = await fetch(`models/${code}.glb`, {method:'HEAD'}); glbCache[code] = r.ok; } catch(e){ glbCache[code]=false; }
+  return glbCache[code];
+}
+function colorFor(code){ let h=0; for (const ch of code) h=(h*31+ch.charCodeAt(0))>>>0; return COLORS[h%COLORS.length]; }
+async function spawnModel(anchor, h, x, y){
+  anchor.querySelectorAll('.model').forEach(m=>m.remove());
+  const outer = document.createElement('a-entity');   // Position + Neigung zur Kamera
+  outer.classList.add('model');
+  outer.setAttribute('position', `${x} ${y} 0.12`);
+  outer.setAttribute('rotation', '55 0 0');
+  const g = document.createElement('a-entity');       // dreht sich
+  g.setAttribute('animation', 'property: rotation; to: 0 360 0; loop: true; dur: 6000; easing: linear');
+  outer.appendChild(g);
+  if (await hasGlb(h.code)) {
+    g.setAttribute('gltf-model', `models/${h.code}.glb`); g.setAttribute('scale','0.15 0.15 0.15');
+  } else {
+    const col = colorFor(h.code);
+    // Dummy: einfache Schutzkappe (Körper + Rand + Lasche)
+    g.innerHTML = `
+      <a-cylinder radius="0.06" height="0.07" color="${col}" position="0 0.035 0" rotation="0 0 0" material="roughness:0.6"></a-cylinder>
+      <a-torus radius="0.068" radius-tubular="0.008" color="${col}" rotation="90 0 0" position="0 0.0 0"></a-torus>
+      <a-cylinder radius="0.045" height="0.002" color="#fff" opacity="0.35" position="0 0.071 0"></a-cylinder>
+      <a-box width="0.05" height="0.006" depth="0.025" color="${col}" position="0.09 0.0 0"></a-box>`;
+  }
+  const label = document.createElement('a-text');
+  label.setAttribute('value', h.code); label.setAttribute('align','center'); label.setAttribute('color','#111');
+  label.setAttribute('width','0.6'); label.setAttribute('position', `${x} ${y+0.12} 0.12`); label.classList.add('model');
+  anchor.appendChild(outer); anchor.appendChild(label);
+  showCard(h);
+}
+
+/* ---------- .mind-Dateien laden und zusammenführen ---------- */
+async function mergedTargets(list){
+  const parts = await Promise.all(list.map(async p => {
+    const r = await fetch(`targets/p${pad(p)}.mind`); if(!r.ok) throw new Error('fehlt: p'+pad(p));
+    const b = new Uint8Array(await r.arrayBuffer()); M.bytes += b.length; return b;
+  }));
+  const dataList = [];
+  for (const b of parts) dataList.push(...MessagePack.decode(b).dataList);
+  return URL.createObjectURL(new Blob([MessagePack.encode({v:2, dataList})]));
+}
+
+(async () => {
+  let hotspots = {};
+  try { hotspots = await (await fetch('hotspots.json')).json(); } catch(e){}
+  let src;
+  try { src = await mergedTargets(pages); }
+  catch(e){ document.getElementById('loading').textContent = 'Fehler beim Laden: '+e.message; return; }
+  M.download = performance.now()-t0; renderMetrics();
+  document.getElementById('loading').textContent = 'Starte Kamera …';
+
+  const scene = document.createElement('a-scene');
+  scene.setAttribute('mindar-image', {imageTargetSrc: src, maxTrack: 1, uiScanning: 'no', uiLoading: 'no', filterMinCF: 0.0001, filterBeta: 0.001});
+  scene.setAttribute('color-space','sRGB');
+  scene.setAttribute('renderer','colorManagement: true, physicallyCorrectLights');
+  scene.setAttribute('vr-mode-ui','enabled: false');
+  scene.setAttribute('device-orientation-permission-ui','enabled: false');
+  scene.innerHTML = `<a-camera position="0 0 0" look-controls="enabled: false" cursor="fuse: false; rayOrigin: mouse;" raycaster="far: 10000; objects: .clickable"></a-camera>
+    <a-light type="ambient" intensity="0.9"></a-light><a-light type="directional" position="0.5 1 1" intensity="0.8"></a-light>`;
+
+  pages.forEach((page, i) => {
+    const t = document.createElement('a-entity');
+    t.setAttribute('mindar-image-target', `targetIndex: ${i}`);
+    (hotspots[page]||[]).forEach(h => {
+      const x = h.u - 0.5, y = (0.5 - h.v) * ASPECT;
+      const ring = document.createElement('a-ring');
+      ring.setAttribute('radius-inner','0.022'); ring.setAttribute('radius-outer','0.032');
+      ring.setAttribute('color','#e30613'); ring.setAttribute('position', `${x} ${y} 0.005`);
+      ring.setAttribute('animation','property: scale; from: 1 1 1; to: 1.25 1.25 1; dir: alternate; loop: true; dur: 700');
+      const hit = document.createElement('a-circle');   // größere, unsichtbare Klickfläche
+      hit.setAttribute('radius','0.06'); hit.setAttribute('material','opacity: 0; transparent: true');
+      hit.setAttribute('position', `${x} ${y} 0.006`); hit.classList.add('clickable');
+      hit.addEventListener('click', () => spawnModel(t, h, x, y));
+      t.appendChild(ring); t.appendChild(hit);
+    });
+    t.addEventListener('targetFound', () => {
+      const tt = performance.now()-t0;
+      if (M.firstFound==null) M.firstFound = tt;
+      M.found.push({page, t: tt}); renderMetrics();
+    });
+    t.addEventListener('targetLost', () => { const el=document.querySelector('#metrics .big'); if(el) el.textContent='Suche Seite …'; });
+    scene.appendChild(t);
+  });
+  scene.addEventListener('arReady', () => { M.arReady = performance.now()-t0; document.getElementById('loading').style.display='none'; renderMetrics(); });
+  scene.addEventListener('arError', () => { document.getElementById('loading').textContent = 'Kamera nicht verfügbar (HTTPS + Kamerafreigabe nötig).'; });
+  document.body.appendChild(scene);
+})();
+</script>
+</body>
+</html>
