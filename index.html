@@ -126,7 +126,7 @@ bar.innerHTML = `<b>Minilog AR</b>
   <a class="${mode==='chapter'?'on':''}" href="${link('chapter')}">Kapitel</a>
   <a class="${mode==='all'?'on':''}" href="${link('all')}">Alle 68</a>
   ${mode==='spread'?`<select onchange="location.search='${link('spread')}&s='+this.value">${spreadOpts}</select>`:''}
-  <span id="ver">v9</span>`;
+  <span id="ver">v10</span>`;
 
 /* ---------- Messwerte ---------- */
 const t0 = performance.now();
@@ -167,7 +167,13 @@ const DE = {'Material':'Material','Colour':'Farbe','Color':'Farbe','Type':'Typ',
   'Application(s)':'Anwendung','Compatible Outside Tube Diameter':'Passender Rohr-Außendurchmesser','Minimum Gauge Size':'Wandstärke min.','Maximum Gauge Size':'Wandstärke max.',
   'Maximum Taper Diameter':'Konus max.','Minimum Taper Diameter':'Konus min.','Head Diameter':'Kopfdurchmesser','Head Height':'Kopfhöhe','Length':'Länge','Width':'Breite','Height':'Höhe',
   'Diameter':'Durchmesser','Thickness':'Dicke','Temperature Rating':'Temperaturbereich','Maximum Temperature':'Max. Temperatur','Hardness':'Härte'};
-const de = k => DE[k] || k;
+Object.assign(DE,{'Overall Length':'Länge','Overall Width':'Breite','Overall Height':'Höhe','Overall Diameter':'Durchmesser','Overall Thickness':'Dicke',
+  'Insert Height':'Einsatzhöhe','Inside Height':'Innenhöhe','Thread Length':'Gewindelänge','Base Diameter':'Fußdurchmesser','Pitch Diameter':'Teilkreisdurchmesser',
+  'Cam Length':'Riegellänge','Stud Length':'Bolzenlänge','Anchor Length':'Ankerlänge','Fitting Height':'Einbauhöhe','Fitting Diameter':'Einbaudurchmesser',
+  'Roll Length':'Rollenlänge','Handle Length':'Grifflänge','Maximum Wall Thickness':'Wandstärke max.','Minimum Wall Thickness':'Wandstärke min.',
+  'Maximum Compatible Wall Thickness':'Wandstärke max.','Shank Diameter':'Schaftdurchmesser','Body Diameter':'Körperdurchmesser'});
+const LETTER = {L:'Länge',W:'Breite',B:'Breite',H:'Höhe',h:'Höhe',T:'Dicke',t:'Dicke',D:'Ø',d:'Ø',R:'Radius',r:'Radius',l:'Länge'};
+const de = k => DE[k] || (/^[A-Za-z][0-9]?$/.test(k) && LETTER[k[0]] ? `${LETTER[k[0]]} ${k}` : k);
 const MAXROWS = 60;
 let cur = null;      // {h, p, v, filt}
 async function showCard(h){
