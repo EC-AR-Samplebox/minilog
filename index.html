@@ -64,7 +64,7 @@ const chap = CHAPTERS[chapKey];
 const s = parseInt(q.get('s') || chap.from, 10);
 const pad = n => String(n).padStart(2,'0');
 /* Glättung (One-Euro-Filter): cf klein = ruhiger im Stand, beta groß = weniger Nachlaufen bei Bewegung. Per URL testbar: &cf=0.0001&beta=10 */
-const CF = parseFloat(q.get('cf') || '0.00005'), BETA = parseFloat(q.get('beta') || '3');
+const CF = parseFloat(q.get('cf') || '0.0001'), BETA = parseFloat(q.get('beta') || '0.001');   // Werte aus v1–v3 (ruhig)
 
 /* Doppelseite: links gerade, rechts ungerade (4|5, 6|7 …) */
 function spreadOf(p){ const l = p % 2 === 0 ? p : p-1; return [l, l+1].filter(x => x>=1 && x<=68); }
@@ -85,7 +85,7 @@ bar.innerHTML = `<b>Minilog AR</b>
   <a class="${mode==='chapter'?'on':''}" href="${link('chapter')}">Kapitel</a>
   <a class="${mode==='all'?'on':''}" href="${link('all')}">Alle 68</a>
   ${mode==='spread'?`<select onchange="location.search='${link('spread')}&s='+this.value">${spreadOpts}</select>`:''}
-  <span id="ver">v11</span>`;
+  <span id="ver">v12</span>`;
 
 /* ---------- Messwerte ---------- */
 const t0 = performance.now();
