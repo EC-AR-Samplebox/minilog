@@ -107,7 +107,7 @@ bar.innerHTML = `<b>Minilog AR</b>
   <a class="${mode==='chapter'?'on':''}" href="${link('chapter')}">Kapitel</a>
   <a class="${mode==='all'?'on':''}" href="${link('all')}">Alle 68</a>
   ${mode==='spread'?`<select onchange="location.search='${link('spread')}&s='+this.value">${spreadOpts}</select>`:''}
-  <span id="ver">v7</span>`;
+  <span id="ver">v8</span>`;
 
 /* ---------- Messwerte ---------- */
 const t0 = performance.now();
@@ -205,9 +205,9 @@ async function onHotspot(anchor, h, x, y){
   if (await hasGlb(h.code)) {
     // Modell ist auf 1 Einheit normiert -> 0,16 Seitenbreiten (~3,4 cm), schwebt geneigt über dem Produkt und dreht sich
     const g = document.createElement('a-entity'); g.classList.add('model');
-    g.setAttribute('position', `${x} ${y} 0.1`); g.setAttribute('rotation','50 0 0');
+    g.setAttribute('position', `${x} ${y} 0.1`); g.setAttribute('rotation','15 0 0');   // Modelle sind so exportiert, dass die große Fläche zur Kamera zeigt
     g.setAttribute('animation__pop','property: scale; from: 0.01 0.01 0.01; to: 1 1 1; dur: 350; easing: easeOutBack');
-    g.innerHTML = `<a-entity gltf-model="models/${h.code}.glb" scale="0.16 0.16 0.16" animation="property: rotation; to: 0 360 0; loop: true; dur: 7000; easing: linear"></a-entity>`;
+    g.innerHTML = `<a-entity gltf-model="models/${h.code}.glb" scale="0.16 0.16 0.16" rotation="0 -40 0" animation="property: rotation; from: 0 -40 0; to: 0 40 0; dir: alternate; loop: true; dur: 2600; easing: easeInOutSine"></a-entity>`;
     anchor.appendChild(g);
     const sku = (await MODELS)[h.code];
     const note = sheet.querySelector('.note'); note.textContent = `Artikel ${cur?.v?.s||''} · 3D über dem Heft zeigt Serienmodell (Artikel ${sku})`;
