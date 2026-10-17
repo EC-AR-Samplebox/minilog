@@ -7,7 +7,6 @@
 <script src="https://cdn.jsdelivr.net/npm/@msgpack/msgpack@2.8.0/dist.es5+umd/msgpack.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/aframe@1.5.0/dist/aframe-master.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
-<script type="module" src="https://cdn.jsdelivr.net/npm/@google/model-viewer@3.5.0/dist/model-viewer.min.js"></script>
 <style>
   :root{--red:#e30613;--ink:#1d1d1b;--bg:rgba(255,255,255,.94);--muted:#6b6b6b}
   /* kein Hintergrund auf body: MindAR legt das Kamerabild mit negativem z-index dahinter */
@@ -22,43 +21,15 @@
   #metrics .big{font:600 15px system-ui;color:var(--red)}
   #metrics button{font:inherit;margin-top:4px;padding:3px 8px;border-radius:8px;border:1px solid #ccc;background:#fff}
   .a-enter-vr,.a-enter-ar,.a-enter-vr-button,.a-enter-ar-button{display:none!important}
-  /* Produktkarte (Bottom Sheet) */
-  #sheet{position:fixed;left:0;right:0;bottom:0;z-index:30;background:#fff;border-radius:16px 16px 0 0;box-shadow:0 -6px 24px rgba(0,0,0,.3);
-       padding:10px 14px calc(env(safe-area-inset-bottom) + 12px);height:78vh;overflow:auto;transform:translateY(105%);transition:transform .25s ease;box-sizing:border-box}
+  /* Call-to-Action-Karte */
+  #sheet{position:fixed;left:10px;right:10px;bottom:calc(env(safe-area-inset-bottom) + 10px);z-index:30;background:#fff;border-radius:16px;
+       box-shadow:0 6px 24px rgba(0,0,0,.3);padding:14px 16px;transform:translateY(130%);transition:transform .25s ease}
   #sheet.open{transform:none}
-  #sheet .grab{width:40px;height:4px;border-radius:2px;background:#ddd;margin:0 auto 8px}
-  #sheet .x{position:absolute;right:8px;top:8px;border:0;background:none;font-size:26px;line-height:1;color:var(--muted);padding:6px}
-  #sheet .name{font-weight:700;font-size:16px;padding-right:34px;line-height:1.25}
-  #sheet .code{display:inline-block;background:#eee;padding:1px 6px;border-radius:3px;font-size:12px;margin:4px 0 8px;color:#444}
-  .stage{position:relative;height:34vh;border-radius:12px;background:radial-gradient(circle at 50% 40%,#fff 0,#f1f1f1 70%);overflow:hidden}
-  .stage model-viewer,.stage img{width:100%;height:100%;display:block}
-  .stage img{object-fit:contain;background:#fff}
-  .stage .seg{position:absolute;left:50%;bottom:8px;transform:translateX(-50%);display:flex;background:rgba(255,255,255,.92);border-radius:16px;box-shadow:0 1px 4px rgba(0,0,0,.15);overflow:hidden}
-  .stage .seg button{border:0;background:none;padding:6px 14px;font:inherit;font-size:12px;font-weight:600;color:#555}
-  .stage .seg button.on{background:var(--red);color:#fff}
-  .stage .hint{position:absolute;top:8px;left:10px;font-size:11px;color:var(--muted)}
-  #sheet .desc{font-size:13px;color:#444;margin:10px 0 4px;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
-  #sheet .desc.full{-webkit-line-clamp:unset}
-  #sheet h4{margin:12px 0 6px;font-size:13px;text-transform:uppercase;letter-spacing:.04em;color:#666}
-  .spec{width:100%;border-collapse:collapse;font-size:13px}
-  .spec td{padding:5px 0;border-bottom:1px solid #f0f0f0;vertical-align:top}
-  .spec td:first-child{color:#666;width:45%;padding-right:8px}
-  .spec td:last-child{font-weight:600}
-  .filters{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:6px}
-  .filters select{width:100%;font:inherit;font-size:12px;padding:6px;border-radius:8px;border:1px solid #ccc;background:#fff;color:var(--ink)}
-  .vlist{border:1px solid #eee;border-radius:10px;max-height:30vh;overflow:auto}
-  .vrow{padding:8px 10px;border-bottom:1px solid #f2f2f2;font-size:12px;cursor:pointer}
-  .vrow:last-child{border-bottom:0}
-  .vrow.on{background:#fdecee;box-shadow:inset 3px 0 0 var(--red)}
-  .vrow .sku{font-weight:700;font-size:12px}
-  .vrow .chips{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}
-  .vrow .chips span{background:#f2f2f2;border-radius:10px;padding:2px 7px;font-size:11px;color:#333}
-  .vmore{padding:8px 10px;font-size:12px;color:var(--muted)}
-  #sheet .btns{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
-  #sheet .btns a{display:block;text-align:center;padding:11px 4px;border-radius:10px;font-size:14px;font-weight:600;text-decoration:none;color:#fff;background:var(--red)}
-  #sheet .btns a.sec{background:#fff;color:var(--red);border:1.5px solid var(--red)}
-  #sheet .btns a.off{opacity:.35;pointer-events:none}
-  #sheet .note{font-size:11px;color:var(--muted);margin-top:8px}
+  #sheet .x{position:absolute;right:6px;top:6px;border:0;background:none;font-size:24px;line-height:1;color:var(--muted);padding:6px}
+  #sheet .name{font-weight:700;font-size:16px;padding-right:30px;line-height:1.25}
+  #sheet .code{font-size:12px;color:var(--muted);margin:3px 0 12px}
+  #sheet .cta{display:block;text-align:center;padding:13px;border-radius:12px;font-size:15px;font-weight:700;text-decoration:none;color:#fff;background:var(--red)}
+  #sheet .cta.off{opacity:.35;pointer-events:none}
   body.sheet-open #metrics{display:none}
   /* eigener Container mit Stapelkontext: Kamera-Video (z-index -2) liegt sicher sichtbar hinter der 3D-Ebene */
   #ar{position:fixed;inset:0;z-index:0;overflow:hidden}
@@ -72,21 +43,9 @@
 <div id="ar"></div>
 <div id="loading">Lade Ziele …</div>
 <div id="sheet" aria-live="polite">
-  <div class="grab"></div>
   <button class="x" onclick="hideCard()" aria-label="Schließen">×</button>
   <div class="name"></div><div class="code"></div>
-  <div class="stage"></div>
-  <p class="desc" onclick="this.classList.toggle('full')"></p>
-  <h4 class="vh">Variante</h4>
-  <div class="filters"></div>
-  <div class="vlist"></div>
-  <h4 class="sh">Ausgewählt</h4>
-  <table class="spec"></table>
-  <div class="btns">
-    <a class="bpdf" target="_blank" rel="noopener">Zeichnung PDF</a>
-    <a class="bshop sec" target="_blank" rel="noopener">Im Shop</a>
-  </div>
-  <div class="note"></div>
+  <a class="cta" target="_blank" rel="noopener">Auf essentracomponents.com ansehen</a>
 </div>
 <div id="metrics"></div>
 <script>
@@ -105,7 +64,7 @@ const chap = CHAPTERS[chapKey];
 const s = parseInt(q.get('s') || chap.from, 10);
 const pad = n => String(n).padStart(2,'0');
 /* Glättung (One-Euro-Filter): cf klein = ruhiger im Stand, beta groß = weniger Nachlaufen bei Bewegung. Per URL testbar: &cf=0.0001&beta=10 */
-const CF = parseFloat(q.get('cf') || '0.0001'), BETA = parseFloat(q.get('beta') || '10');
+const CF = parseFloat(q.get('cf') || '0.00005'), BETA = parseFloat(q.get('beta') || '3');
 
 /* Doppelseite: links gerade, rechts ungerade (4|5, 6|7 …) */
 function spreadOf(p){ const l = p % 2 === 0 ? p : p-1; return [l, l+1].filter(x => x>=1 && x<=68); }
@@ -126,7 +85,7 @@ bar.innerHTML = `<b>Minilog AR</b>
   <a class="${mode==='chapter'?'on':''}" href="${link('chapter')}">Kapitel</a>
   <a class="${mode==='all'?'on':''}" href="${link('all')}">Alle 68</a>
   ${mode==='spread'?`<select onchange="location.search='${link('spread')}&s='+this.value">${spreadOpts}</select>`:''}
-  <span id="ver">v10</span>`;
+  <span id="ver">v11</span>`;
 
 /* ---------- Messwerte ---------- */
 const t0 = performance.now();
@@ -157,123 +116,44 @@ const PDF = 'https://storacesswebpraisstibprd.blob.core.windows.net/stiboassets/
 let PRODUCTS = null;
 const productsReady = fetch('products.json').then(r=>r.json()).then(j=>PRODUCTS=j).catch(()=>PRODUCTS={});
 
-/* ---------- Produktkarte ---------- */
+/* ---------- Call to Action ---------- */
 const sheet = document.getElementById('sheet');
-const DE = {'Material':'Material','Colour':'Farbe','Color':'Farbe','Type':'Typ','Finish':'Oberfläche','Thread Size':'Gewindegröße','Thread Standard':'Gewindestandard',
-  'Pull Direction':'Zugrichtung','Tab Length':'Laschenlänge','Inside Diameter':'Innendurchmesser','Outside Diameter':'Außendurchmesser','Overall Height':'Gesamthöhe',
-  'Overall Length':'Gesamtlänge','Overall Width':'Gesamtbreite','Flange Diameter':'Flanschdurchmesser','Compatible Hole Diameter':'Passender Lochdurchmesser',
-  'Maximum Compatible Hole Diameter':'Lochdurchmesser max.','Minimum Compatible Hole Diameter':'Lochdurchmesser min.','Nominal Pipe Size':'Nennweite',
-  'Compatible Nominal Pipe Size':'Passende Nennweite','Class Pressure Rating':'Druckklasse','Mounting Hole Dimensions':'Lochabstand','Plug Style':'Stopfenform',
-  'Application(s)':'Anwendung','Compatible Outside Tube Diameter':'Passender Rohr-Außendurchmesser','Minimum Gauge Size':'Wandstärke min.','Maximum Gauge Size':'Wandstärke max.',
-  'Maximum Taper Diameter':'Konus max.','Minimum Taper Diameter':'Konus min.','Head Diameter':'Kopfdurchmesser','Head Height':'Kopfhöhe','Length':'Länge','Width':'Breite','Height':'Höhe',
-  'Diameter':'Durchmesser','Thickness':'Dicke','Temperature Rating':'Temperaturbereich','Maximum Temperature':'Max. Temperatur','Hardness':'Härte'};
-Object.assign(DE,{'Overall Length':'Länge','Overall Width':'Breite','Overall Height':'Höhe','Overall Diameter':'Durchmesser','Overall Thickness':'Dicke',
-  'Insert Height':'Einsatzhöhe','Inside Height':'Innenhöhe','Thread Length':'Gewindelänge','Base Diameter':'Fußdurchmesser','Pitch Diameter':'Teilkreisdurchmesser',
-  'Cam Length':'Riegellänge','Stud Length':'Bolzenlänge','Anchor Length':'Ankerlänge','Fitting Height':'Einbauhöhe','Fitting Diameter':'Einbaudurchmesser',
-  'Roll Length':'Rollenlänge','Handle Length':'Grifflänge','Maximum Wall Thickness':'Wandstärke max.','Minimum Wall Thickness':'Wandstärke min.',
-  'Maximum Compatible Wall Thickness':'Wandstärke max.','Shank Diameter':'Schaftdurchmesser','Body Diameter':'Körperdurchmesser'});
-const LETTER = {L:'Länge',W:'Breite',B:'Breite',H:'Höhe',h:'Höhe',T:'Dicke',t:'Dicke',D:'Ø',d:'Ø',R:'Radius',r:'Radius',l:'Länge'};
-const de = k => DE[k] || (/^[A-Za-z][0-9]?$/.test(k) && LETTER[k[0]] ? `${LETTER[k[0]]} ${k}` : k);
-const MAXROWS = 60;
-let cur = null;      // {h, p, v, filt}
 async function showCard(h){
   await productsReady;
   const p = PRODUCTS[h.code];
-  cur = {h, p, v:null, filt:{}};
   sheet.querySelector('.name').textContent = h.name || 'Produkt';
   sheet.querySelector('.code').textContent = h.code + (p ? ` · ${p.v.length} Variante${p.v.length>1?'n':''}` : '');
-  const desc = sheet.querySelector('.desc'); desc.textContent = p?.x || ''; desc.classList.remove('full');
-  const hasVar = p && p.v.length;
-  ['.vh','.filters','.vlist','.sh','.spec'].forEach(c=>sheet.querySelector(c).style.display = hasVar?'':'none');
-  if (hasVar) {
-    buildFilters();
-    const start = p.v.find(v=>v.d) || p.v[0];
-    selectVariant(start);
-  } else {
-    sheet.querySelectorAll('.btns a').forEach(a=>{a.classList.add('off');a.removeAttribute('href');});
-    sheet.querySelector('.note').textContent = 'Für diese Serie sind im PIM-Export noch keine Daten hinterlegt.';
-  }
-  await renderStage();
-  sheet.scrollTop = 0;
+  const v = p?.v.find(x=>x.u);
+  const url = p?.f || (v && p.f ? `${p.f}/${v.s}` : '');
+  const cta = sheet.querySelector('.cta');
+  if (url) { cta.href = url; cta.classList.remove('off'); } else { cta.removeAttribute('href'); cta.classList.add('off'); }
   sheet.classList.add('open'); document.body.classList.add('sheet-open');
 }
-
-/* Bühne: 3D-Modell zentriert (stabil, mit Finger drehbar) oder Zeichnung */
-let stageMode = '3d';
-async function renderStage(){
-  const st = sheet.querySelector('.stage'); const {h,p,v} = cur;
-  const glb = await hasGlb(h.code);
-  const fallback = p?.v.find(x=>x.d);
-  const drawId = v?.d || fallback?.d || v?.i;
-  if (!glb) stageMode = 'draw';
-  let html = '';
-  if (stageMode==='3d' && glb) {
-    html = `<model-viewer src="models/${h.code}.glb" camera-controls auto-rotate auto-rotate-delay="0" rotation-per-second="25deg"
-              interaction-prompt="none" shadow-intensity="0.8" exposure="1.05" orientation="0deg -90deg 0deg" camera-orbit="20deg 55deg auto" touch-action="pan-y" alt="3D-Modell ${h.code}"></model-viewer>
-            <div class="hint">3D · mit dem Finger drehen</div>`;
-  } else if (drawId) {
-    html = `<img src="${IMG}${encodeURIComponent(drawId)}.jpg" alt="Technische Zeichnung" onerror="this.style.display='none'">`;
-  } else html = `<div class="hint">Keine Ansicht verfügbar</div>`;
-  if (glb && drawId) html += `<div class="seg"><button class="${stageMode==='3d'?'on':''}" onclick="setStage('3d')">3D</button><button class="${stageMode==='draw'?'on':''}" onclick="setStage('draw')">Zeichnung</button></div>`;
-  st.innerHTML = html;
-}
-function setStage(m){ stageMode = m; renderStage(); }
-
-/* Varianten: Filter für Auswahl-Attribute (wenige Werte), Liste mit den unterscheidenden Attributen */
-function buildFilters(){
-  const {p} = cur, box = sheet.querySelector('.filters'); box.innerHTML = '';
-  if (p.v.length <= 6) { box.style.display='none'; renderList(); return; }
-  p.k.forEach((k,i)=>{
-    const vals = [...new Set(p.v.map(v=>v.a?.[i]).filter(Boolean))];
-    if (vals.length < 2 || vals.length > 25) return;
-    vals.sort((a,b)=>(parseFloat(a)||0)-(parseFloat(b)||0) || a.localeCompare(b));
-    const sel = document.createElement('select');
-    sel.innerHTML = `<option value="">${de(k)}: alle</option>` + vals.map(x=>`<option>${x.replace(/</g,'&lt;')}</option>`).join('');
-    sel.onchange = () => { if (sel.value) cur.filt[i]=sel.value; else delete cur.filt[i]; renderList(); };
-    box.appendChild(sel);
-  });
-  box.style.display = box.children.length ? '' : 'none';
-  renderList();
-}
-function matches(v){ return Object.entries(cur.filt).every(([i,val])=>v.a?.[i]===val); }
-function renderList(){
-  const {p} = cur, list = sheet.querySelector('.vlist');
-  const rows = p.v.filter(matches);
-  sheet.querySelector('.vh').textContent = `Variante wählen (${rows.length}${rows.length!==p.v.length?' von '+p.v.length:''})`;
-  list.innerHTML = rows.slice(0,MAXROWS).map(v=>{
-    const chips = (v.a||[]).map((x,i)=>x?`<span title="${de(p.k[i])}">${x.replace(/</g,'&lt;')}</span>`:'').join('');
-    return `<div class="vrow ${cur.v===v?'on':''}" data-s="${v.s}"><div class="sku">${v.s}</div><div class="chips">${chips}</div></div>`;
-  }).join('') + (rows.length>MAXROWS?`<div class="vmore">… ${rows.length-MAXROWS} weitere – bitte Filter nutzen</div>`:'');
-  list.querySelectorAll('.vrow').forEach(el=>el.onclick=()=>{ selectVariant(p.v.find(v=>v.s===el.dataset.s)); });
-}
-function selectVariant(v){
-  const {p} = cur; cur.v = v;
-  sheet.querySelectorAll('.vrow').forEach(el=>el.classList.toggle('on', el.dataset.s===v.s));
-  if (!sheet.querySelector('.vrow.on')) renderList();
-  // Datenblatt der Variante
-  sheet.querySelector('.spec').innerHTML = `<tr><td>Artikel</td><td>${v.s}</td></tr>` +
-    p.k.map((k,i)=>v.a?.[i]?`<tr><td>${de(k)}</td><td>${v.a[i].replace(/</g,'&lt;')}</td></tr>`:'').join('') +
-    `<tr><td>Bezeichnung</td><td style="font-weight:400">${(v.t||'').replace(/</g,'&lt;')}</td></tr>`;
-  const pdf = sheet.querySelector('.bpdf');
-  if (v.p) { pdf.href = PDF + encodeURIComponent(v.p) + '.pdf'; pdf.classList.remove('off'); } else { pdf.removeAttribute('href'); pdf.classList.add('off'); }
-  const shop = sheet.querySelector('.bshop'); const url = p.f ? (v.u ? `${p.f}/${v.s}` : p.f) : '';
-  if (url) { shop.href = url; shop.classList.remove('off'); } else { shop.removeAttribute('href'); shop.classList.add('off'); }
-  sheet.querySelector('.note').textContent = 'Daten aus PIM-Export' + (stageMode==='3d' ? ' · 3D zeigt das Serienmodell' : '');
-  if (stageMode==='draw') renderStage();
-}
-function hideCard(){ sheet.classList.remove('open'); document.body.classList.remove('sheet-open'); document.querySelectorAll('.model').forEach(m=>m.remove()); sheet.querySelector('.stage').innerHTML=''; }
+function hideCard(){ sheet.classList.remove('open'); document.body.classList.remove('sheet-open'); }
 
 /* ---------- Antippen: Ring markieren, optional eigenes GLB (models/<code>.glb) ---------- */
 // models/index.json: { "SR1055": "<Artikel des Modells>", … } – aus STEP-Daten konvertiert
 const MODELS = fetch('models/index.json').then(r=>r.ok?r.json():{}).catch(()=>({}));
 async function hasGlb(code){ return !!(await MODELS)[code]; }
-async function onHotspot(anchor, h, x, y){
-  anchor.querySelectorAll('.model').forEach(m=>m.remove());
-  const dot = document.createElement('a-circle');      // gefüllter Punkt = ausgewählt
-  dot.setAttribute('radius','0.022'); dot.setAttribute('color','#e30613'); dot.setAttribute('position',`${x} ${y} 0.007`); dot.classList.add('model');
-  anchor.appendChild(dot);
-  stageMode = '3d';
-  showCard(h);
+async function onHotspot(anchor, h, x, y){ showCard(h); }
+
+/* ---------- Schwebende Bauteile: alle Modelle der Seite, knapp über der Abbildung, ruhige Drehung ---------- */
+const spawned = new Set();
+async function spawnPageModels(anchor, page, list){
+  if (spawned.has(page)) return; spawned.add(page);
+  for (const h of list){
+    if (!(await hasGlb(h.code))) continue;
+    const x = h.u - 0.5, y = (0.5 - h.v) * ASPECT;
+    const ring = anchor.querySelector(`[data-ring="${h.code}-${h.u}"]`); if (ring) ring.setAttribute('visible', false);
+    const g = document.createElement('a-entity');
+    g.setAttribute('position', `${x} ${y} 0.045`);
+    g.setAttribute('rotation', '25 0 0');                       // leicht zur Kamera geneigt
+    g.innerHTML = `<a-entity gltf-model="models/${h.code}.glb" scale="0.14 0.14 0.14"
+        animation="property: rotation; from: 0 0 0; to: 0 0 360; loop: true; dur: 9000; easing: linear"></a-entity>
+      <a-circle class="clickable" radius="0.09" material="opacity: 0; transparent: true" position="0 0 -0.03"></a-circle>`;
+    g.querySelector('.clickable').addEventListener('click', () => showCard(h));
+    anchor.appendChild(g);
+  }
 }
 
 /* ---------- .mind-Dateien laden und zusammenführen ---------- */
@@ -312,7 +192,7 @@ async function mergedTargets(list){
       const x = h.u - 0.5, y = (0.5 - h.v) * ASPECT;
       const ring = document.createElement('a-ring');
       ring.setAttribute('radius-inner','0.022'); ring.setAttribute('radius-outer','0.032');
-      ring.setAttribute('color','#e30613'); ring.setAttribute('position', `${x} ${y} 0.005`);
+      ring.setAttribute('color','#e30613'); ring.setAttribute('position', `${x} ${y} 0.005`); ring.dataset.ring = `${h.code}-${h.u}`;
       ring.setAttribute('animation','property: scale; from: 1 1 1; to: 1.25 1.25 1; dir: alternate; loop: true; dur: 700');
       const hit = document.createElement('a-circle');   // größere, unsichtbare Klickfläche
       hit.setAttribute('radius','0.06'); hit.setAttribute('material','opacity: 0; transparent: true');
@@ -320,7 +200,7 @@ async function mergedTargets(list){
       hit.addEventListener('click', () => onHotspot(t, h, x, y));
       t.appendChild(ring); t.appendChild(hit);
     });
-    t.addEventListener('targetFound', () => {
+    t.addEventListener('targetFound', () => { spawnPageModels(t, page, hotspots[page]||[]);
       const tt = performance.now()-t0;
       if (M.firstFound==null) M.firstFound = tt;
       M.found.push({page, t: tt}); renderMetrics();
