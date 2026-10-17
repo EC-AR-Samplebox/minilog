@@ -21,12 +21,29 @@
   #metrics .big{font:600 15px system-ui;color:var(--red)}
   #metrics button{font:inherit;margin-top:4px;padding:3px 8px;border-radius:8px;border:1px solid #ccc;background:#fff}
   .a-enter-vr,.a-enter-ar,.a-enter-vr-button,.a-enter-ar-button{display:none!important}
-  #card{position:fixed;right:8px;top:calc(env(safe-area-inset-top) + 56px);z-index:21;background:#fff;border-radius:12px;
-       padding:10px 12px;max-width:230px;box-shadow:0 4px 18px rgba(0,0,0,.3);display:none}
-  #card .code{display:inline-block;background:#e9e9e9;padding:1px 6px;border-radius:3px;font-size:12px;margin:4px 0}
-  #card .name{font-weight:600;font-size:14px}
-  #card .hint{color:var(--muted);font-size:11px}
-  #card button{float:right;border:0;background:none;font-size:18px;line-height:1}
+  /* Produktkarte (Bottom Sheet) */
+  #sheet{position:fixed;left:0;right:0;bottom:0;z-index:30;background:#fff;border-radius:16px 16px 0 0;box-shadow:0 -6px 24px rgba(0,0,0,.3);
+       padding:12px 14px calc(env(safe-area-inset-bottom) + 12px);max-height:72vh;overflow:auto;transform:translateY(105%);transition:transform .25s ease}
+  #sheet.open{transform:none}
+  #sheet .x{position:absolute;right:8px;top:6px;border:0;background:none;font-size:24px;line-height:1;color:var(--muted);padding:6px}
+  #sheet .name{font-weight:700;font-size:16px;padding-right:30px}
+  #sheet .code{display:inline-block;background:#e9e9e9;padding:1px 6px;border-radius:3px;font-size:12px;margin:4px 0 6px}
+  #sheet .desc{font-size:13px;color:#444;margin:0 0 8px}
+  #sheet .draw{display:block;width:100%;max-height:34vh;object-fit:contain;background:#fafafa;border:1px solid #eee;border-radius:8px}
+  #sheet select{width:100%;font:inherit;font-size:13px;padding:7px;border-radius:8px;border:1px solid #ccc;margin:8px 0;background:#fff;color:var(--ink)}
+  #sheet .btns{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px}
+  #sheet .btns a{display:block;text-align:center;padding:10px 4px;border-radius:10px;font-size:13px;font-weight:600;text-decoration:none;color:#fff;background:var(--red)}
+  #sheet .btns a.sec{background:#fff;color:var(--red);border:1.5px solid var(--red)}
+  #sheet .btns a.off{opacity:.35;pointer-events:none}
+  #sheet .note{font-size:11px;color:var(--muted);margin-top:6px}
+  /* 3D-Viewer (TraceParts) */
+  #viewer{position:fixed;inset:0;z-index:40;background:#fff;display:none;flex-direction:column}
+  #viewer.open{display:flex}
+  #viewer header{display:flex;align-items:center;gap:8px;padding:calc(env(safe-area-inset-top) + 8px) 12px 8px;border-bottom:1px solid #eee;font-size:14px}
+  #viewer header b{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  #viewer header button{border:0;background:var(--red);color:#fff;border-radius:14px;padding:6px 12px;font:inherit;font-weight:600}
+  #viewer iframe{flex:1;border:0;width:100%}
+  body.sheet-open #metrics{display:none}
   /* eigener Container mit Stapelkontext: Kamera-Video (z-index -2) liegt sicher sichtbar hinter der 3D-Ebene */
   #ar{position:fixed;inset:0;z-index:0;overflow:hidden}
   #ar video{display:block!important;visibility:visible!important;opacity:1!important}
@@ -38,7 +55,20 @@
 <div id="bar"></div>
 <div id="ar"></div>
 <div id="loading">Lade Ziele …</div>
-<div id="card"><button onclick="hideCard()">×</button><div class="name"></div><div class="code"></div><div class="hint">Dummy-3D – echtes Modell folgt (models/&lt;Artikelnr&gt;.glb)</div></div>
+<div id="sheet" aria-live="polite">
+  <button class="x" onclick="hideCard()" aria-label="Schließen">×</button>
+  <div class="name"></div><div class="code"></div>
+  <p class="desc"></p>
+  <img class="draw" alt="Technische Zeichnung">
+  <select class="variant" aria-label="Variante"></select>
+  <div class="btns">
+    <a class="b3d" href="#" onclick="open3D(event)">3D-Modell</a>
+    <a class="bpdf sec" target="_blank" rel="noopener">Zeichnung PDF</a>
+    <a class="bshop sec" target="_blank" rel="noopener">Im Shop</a>
+  </div>
+  <div class="note"></div>
+</div>
+<div id="viewer"><header><b></b><button onclick="close3D()">Zurück zur AR</button></header><iframe title="3D-Modell" allow="fullscreen; xr-spatial-tracking"></iframe></div>
 <div id="metrics"></div>
 <script>
 /* ---------- Konfiguration ---------- */
@@ -48,7 +78,6 @@ const CHAPTERS = {
 };
 const ALL_PAGES = Array.from({length:68},(_,i)=>i+1);
 const ASPECT = 905/640;           // Höhe/Breite der Zielbilder
-const COLORS = ['#e30613','#f5c400','#1e5bc6','#222','#2e9c4a','#ff7a00'];
 
 const q = new URLSearchParams(location.search);
 const mode = ['spread','chapter','all'].includes(q.get('mode')) ? q.get('mode') : 'chapter';
@@ -76,7 +105,7 @@ bar.innerHTML = `<b>Minilog AR</b>
   <a class="${mode==='chapter'?'on':''}" href="${link('chapter')}">Kapitel</a>
   <a class="${mode==='all'?'on':''}" href="${link('all')}">Alle 68</a>
   ${mode==='spread'?`<select onchange="location.search='${link('spread')}&s='+this.value">${spreadOpts}</select>`:''}
-  <span id="ver">v4</span>`;
+  <span id="ver">v6</span>`;
 
 /* ---------- Messwerte ---------- */
 const t0 = performance.now();
@@ -101,43 +130,86 @@ function copyMetrics(){
 function alertLite(t){ const el=document.querySelector('#metrics .big'); const o=el.textContent; el.textContent=t; setTimeout(()=>el.textContent=o,1200); }
 renderMetrics();
 
-/* ---------- Produktkarte ---------- */
-function showCard(h){ const c=document.getElementById('card'); c.querySelector('.name').textContent=h.name||'Produkt'; c.querySelector('.code').textContent=h.code; c.style.display='block'; }
-function hideCard(){ document.getElementById('card').style.display='none'; document.querySelectorAll('.model').forEach(m=>m.remove()); }
+/* ---------- Produktdaten (PIM) ---------- */
+const IMG = 'https://storacesswebpraisstibprd.blob.core.windows.net/stiboassets/D365_800X800_MAX_JPG/std.lang.all/D365_800X800_MAX_JPG!';
+const PDF = 'https://storacesswebpraisstibprd.blob.core.windows.net/stiboassets/D365_DOCS_PDF/std.lang.all/D365_DOCS_PDF!';
+const TP3D = 'https://www.traceparts.com/els/essentra-components/en/api/viewer/3d?SupplierID=ESSENTRA_COMPONENTS&PartNumber=';
+let PRODUCTS = null;
+const productsReady = fetch('products.json').then(r=>r.json()).then(j=>PRODUCTS=j).catch(()=>PRODUCTS={});
 
-/* ---------- Dummy-3D (oder models/<code>.glb, falls vorhanden) ---------- */
-const glbCache = {};
-async function hasGlb(code){
-  if (code in glbCache) return glbCache[code];
-  try { const r = await fetch(`models/${code}.glb`, {method:'HEAD'}); glbCache[code] = r.ok; } catch(e){ glbCache[code]=false; }
-  return glbCache[code];
-}
-function colorFor(code){ let h=0; for (const ch of code) h=(h*31+ch.charCodeAt(0))>>>0; return COLORS[h%COLORS.length]; }
-async function spawnModel(anchor, h, x, y){
-  anchor.querySelectorAll('.model').forEach(m=>m.remove());
-  const outer = document.createElement('a-entity');   // Position + Neigung zur Kamera
-  outer.classList.add('model');
-  outer.setAttribute('position', `${x} ${y} 0.12`);
-  outer.setAttribute('rotation', '55 0 0');
-  const g = document.createElement('a-entity');       // dreht sich
-  g.setAttribute('animation', 'property: rotation; to: 0 360 0; loop: true; dur: 6000; easing: linear');
-  outer.appendChild(g);
-  if (await hasGlb(h.code)) {
-    g.setAttribute('gltf-model', `models/${h.code}.glb`); g.setAttribute('scale','0.15 0.15 0.15');
+/* ---------- Produktkarte ---------- */
+const sheet = document.getElementById('sheet');
+let cur = null;   // {h, p, v}
+async function showCard(h){
+  await productsReady;
+  const p = PRODUCTS[h.code];
+  sheet.querySelector('.name').textContent = h.name || 'Produkt';
+  sheet.querySelector('.code').textContent = h.code + (p ? ` · ${p.v.length} Variante${p.v.length>1?'n':''}` : '');
+  sheet.querySelector('.desc').textContent = p?.x || '';
+  const sel = sheet.querySelector('.variant');
+  sel.innerHTML = '';
+  if (p && p.v.length) {
+    p.v.forEach((v,i)=>{ const o=document.createElement('option'); o.value=i; o.textContent=`${v.t} (${v.s})`; sel.appendChild(o); });
+    // Startvariante: eine mit Zeichnung, sonst die erste
+    const start = Math.max(0, p.v.findIndex(v=>v.d));
+    sel.value = start; sel.style.display = p.v.length>1 ? '' : 'none';
+    sel.onchange = () => setVariant(h, p, p.v[sel.value]);
+    setVariant(h, p, p.v[start]);
   } else {
-    const col = colorFor(h.code);
-    // Dummy: einfache Schutzkappe (Körper + Rand + Lasche)
-    g.innerHTML = `
-      <a-cylinder radius="0.06" height="0.07" color="${col}" position="0 0.035 0" rotation="0 0 0" material="roughness:0.6"></a-cylinder>
-      <a-torus radius="0.068" radius-tubular="0.008" color="${col}" rotation="90 0 0" position="0 0.0 0"></a-torus>
-      <a-cylinder radius="0.045" height="0.002" color="#fff" opacity="0.35" position="0 0.071 0"></a-cylinder>
-      <a-box width="0.05" height="0.006" depth="0.025" color="${col}" position="0.09 0.0 0"></a-box>`;
+    sel.style.display='none'; cur = {h, p:null, v:null};
+    sheet.querySelector('.draw').style.display='none';
+    ['.b3d','.bpdf'].forEach(c=>sheet.querySelector(c).classList.add('off'));
+    const shop=sheet.querySelector('.bshop'); shop.classList.add('off');
+    sheet.querySelector('.note').textContent = 'Für diese Serie sind im PIM-Export noch keine Daten hinterlegt.';
   }
-  const label = document.createElement('a-text');
-  label.setAttribute('value', h.code); label.setAttribute('align','center'); label.setAttribute('color','#111');
-  label.setAttribute('width','0.6'); label.setAttribute('position', `${x} ${y+0.12} 0.12`); label.classList.add('model');
-  anchor.appendChild(outer); anchor.appendChild(label);
+  sheet.classList.add('open'); document.body.classList.add('sheet-open');
+}
+function setVariant(h, p, v){
+  cur = {h, p, v};
+  const img = sheet.querySelector('.draw');
+  const fallback = p.v.find(x=>x.d);      // Serienzeichnung, falls Variante keine eigene hat
+  const id = v.d || fallback?.d || v.i;
+  if (id) { img.src = IMG + encodeURIComponent(id) + '.jpg'; img.style.display=''; img.alt = v.d||fallback ? 'Technische Zeichnung' : 'Produktbild'; }
+  else img.style.display='none';
+  img.onerror = () => { if (v.i && !img.src.includes(encodeURIComponent(v.i))) img.src = IMG + encodeURIComponent(v.i) + '.jpg'; else img.style.display='none'; };
+  const b3d = sheet.querySelector('.b3d'); b3d.classList.toggle('off', !v.s);
+  const pdf = sheet.querySelector('.bpdf');
+  if (v.p) { pdf.href = PDF + encodeURIComponent(v.p) + '.pdf'; pdf.classList.remove('off'); } else { pdf.removeAttribute('href'); pdf.classList.add('off'); }
+  const shop = sheet.querySelector('.bshop');
+  const url = p.f ? (v.u ? `${p.f}/${v.s}` : p.f) : '';
+  if (url) { shop.href = url; shop.classList.remove('off'); } else { shop.removeAttribute('href'); shop.classList.add('off'); }
+  sheet.querySelector('.note').textContent = `Artikel ${v.s} · Daten aus PIM-Export`;
+}
+function hideCard(){ sheet.classList.remove('open'); document.body.classList.remove('sheet-open'); document.querySelectorAll('.model').forEach(m=>m.remove()); }
+function open3D(e){
+  e.preventDefault(); if (!cur?.v) return;
+  const vw = document.getElementById('viewer');
+  vw.querySelector('b').textContent = `${cur.v.t} (${cur.v.s})`;
+  vw.querySelector('iframe').src = TP3D + encodeURIComponent(cur.v.s);
+  vw.classList.add('open');
+}
+function close3D(){ const vw=document.getElementById('viewer'); vw.classList.remove('open'); vw.querySelector('iframe').src='about:blank'; }
+
+/* ---------- Antippen: Ring markieren, optional eigenes GLB (models/<code>.glb) ---------- */
+// models/index.json: { "SR1055": "<Artikel des Modells>", … } – aus STEP-Daten konvertiert
+const MODELS = fetch('models/index.json').then(r=>r.ok?r.json():{}).catch(()=>({}));
+async function hasGlb(code){ return !!(await MODELS)[code]; }
+async function onHotspot(anchor, h, x, y){
+  anchor.querySelectorAll('.model').forEach(m=>m.remove());
+  const dot = document.createElement('a-circle');      // gefüllter Punkt = ausgewählt
+  dot.setAttribute('radius','0.022'); dot.setAttribute('color','#e30613'); dot.setAttribute('position',`${x} ${y} 0.007`); dot.classList.add('model');
+  anchor.appendChild(dot);
   showCard(h);
+  if (await hasGlb(h.code)) {
+    // Modell ist auf 1 Einheit normiert -> 0,16 Seitenbreiten (~3,4 cm), schwebt geneigt über dem Produkt und dreht sich
+    const g = document.createElement('a-entity'); g.classList.add('model');
+    g.setAttribute('position', `${x} ${y} 0.1`); g.setAttribute('rotation','50 0 0');
+    g.setAttribute('animation__pop','property: scale; from: 0.01 0.01 0.01; to: 1 1 1; dur: 350; easing: easeOutBack');
+    g.innerHTML = `<a-entity gltf-model="models/${h.code}.glb" scale="0.16 0.16 0.16" animation="property: rotation; to: 0 360 0; loop: true; dur: 7000; easing: linear"></a-entity>`;
+    anchor.appendChild(g);
+    const sku = (await MODELS)[h.code];
+    const note = sheet.querySelector('.note'); note.textContent = `3D in AR: Artikel ${sku} · ` + note.textContent;
+  }
 }
 
 /* ---------- .mind-Dateien laden und zusammenführen ---------- */
@@ -167,7 +239,7 @@ async function mergedTargets(list){
   scene.setAttribute('vr-mode-ui','enabled: false');
   scene.setAttribute('device-orientation-permission-ui','enabled: false');
   scene.innerHTML = `<a-camera position="0 0 0" look-controls="enabled: false" cursor="fuse: false; rayOrigin: mouse;" raycaster="far: 10000; objects: .clickable"></a-camera>
-    <a-light type="ambient" intensity="0.9"></a-light><a-light type="directional" position="0.5 1 1" intensity="0.8"></a-light>`;
+    <a-light type="ambient" intensity="0.9"></a-light><a-light type="directional" position="0.5 1 1" intensity="1.6"></a-light><a-light type="directional" position="-1 -0.5 0.8" intensity="0.5"></a-light>`;
 
   pages.forEach((page, i) => {
     const t = document.createElement('a-entity');
@@ -181,7 +253,7 @@ async function mergedTargets(list){
       const hit = document.createElement('a-circle');   // größere, unsichtbare Klickfläche
       hit.setAttribute('radius','0.06'); hit.setAttribute('material','opacity: 0; transparent: true');
       hit.setAttribute('position', `${x} ${y} 0.006`); hit.classList.add('clickable');
-      hit.addEventListener('click', () => spawnModel(t, h, x, y));
+      hit.addEventListener('click', () => onHotspot(t, h, x, y));
       t.appendChild(ring); t.appendChild(hit);
     });
     t.addEventListener('targetFound', () => {
