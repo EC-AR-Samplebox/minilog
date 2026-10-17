@@ -76,7 +76,7 @@ bar.innerHTML = `<b>Minilog AR</b>
   <a class="${mode==='chapter'?'on':''}" href="${link('chapter')}">Kapitel</a>
   <a class="${mode==='all'?'on':''}" href="${link('all')}">Alle 68</a>
   ${mode==='spread'?`<select onchange="location.search='${link('spread')}&s='+this.value">${spreadOpts}</select>`:''}
-  <span id="ver">v3</span>`;
+  <span id="ver">v4</span>`;
 
 /* ---------- Messwerte ---------- */
 const t0 = performance.now();
@@ -161,7 +161,7 @@ async function mergedTargets(list){
   document.getElementById('loading').style.display = 'none';   // Kamera-Dialog nicht verdecken
 
   const scene = document.createElement('a-scene');
-  scene.setAttribute('mindar-image', {imageTargetSrc: src, maxTrack: 1, uiScanning: 'no', uiLoading: 'no', filterMinCF: 0.0001, filterBeta: 0.001});
+  scene.setAttribute('mindar-image', {imageTargetSrc: src, maxTrack: 1, uiScanning: 'no', uiLoading: 'no', filterMinCF: 0.001, filterBeta: 100});
   scene.setAttribute('color-space','sRGB');
   scene.setAttribute('renderer','colorManagement: true, physicallyCorrectLights');
   scene.setAttribute('vr-mode-ui','enabled: false');
